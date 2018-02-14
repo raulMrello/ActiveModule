@@ -8,6 +8,12 @@ Las clases que hereden el interfaz deberán implementar las funciones virtuales p
   
 ## Changelog
 
+*14.02.2018*
+>**"Habilito flag ready una vez procesado Init::EV_ENTRY"**
+>
+- [x] Compatibilizo para que sea funcional en ambas plataformas.
+  
+
 *13.02.2018*
 >**"Compatibilidad MBED y ESP-IDF"**
 >
