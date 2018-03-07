@@ -1,7 +1,7 @@
 /*
  * ActiveModule.cpp
  *
- *  Versión: 13 Feb 2018
+ *  Versión: 7 Mar 2018
  *  Author: raulMrello
  */
 
@@ -17,8 +17,8 @@
  */
 
 #define DEBUG_TRACE(format, ...)			\
-if(_defdbg){								\
-	printf(format, ##__VA_ARGS__);			\
+if(_defdbg && !IS_ISR()){					\
+	SYSLOG_TRACE(format, ##__VA_ARGS__);	\
 }											\
 
 
@@ -44,7 +44,7 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 	_sub_topic_base = NULL;
 
     // Asigno manejador de mensajes en el Mailbox
-    StateMachine::attachMessageHandler(new Callback<void(State::Msg*)>(this, &ActiveModule::putMessage));
+    StateMachine::attachMessageHandler(new Callback<osStatus(State::Msg*)>(this, &ActiveModule::putMessage));
 
     // creo máquinas de estado inicial
     _stInit.setHandler(callback(this, &ActiveModule::Init_EventHandler));
@@ -86,14 +86,14 @@ void ActiveModule::task() {
 bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
 	int err;
 	if(!_fs->open()){
-		DEBUG_TRACE("\r\n%s ERR_NVS No se puede abrir el sistema NVS", (char*)_name);
+		DEBUG_TRACE("%s ERR_NVS No se puede abrir el sistema NVS\r\n", (char*)_name);
 		return false;
 	}
 	if((err = _fs->save(param_id, data, size, type)) != osOK){
-		DEBUG_TRACE("\r\n%s ERR_NVS [0x%x] grabando %s", (char*)_name, (int)err, param_id);
+		DEBUG_TRACE("%s ERR_NVS [0x%x] grabando %s\r\n", (char*)_name, (int)err, param_id);
 	}
 	else{
-		DEBUG_TRACE("\r\n%s Parm %s guardados en memoria NV", (char*)_name, param_id);
+		DEBUG_TRACE("%s Parm %s guardados en memoria NV\r\n", (char*)_name, param_id);
 	}
 	_fs->close();
 	return ((err == osOK)? true : false);
@@ -104,14 +104,14 @@ bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, 
 bool ActiveModule::restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
 	int err;
 	if(!_fs->open()){
-		DEBUG_TRACE("\r\n%s ERR_NVS No se puede abrir el sistema NVS", _name);
+		DEBUG_TRACE("%s ERR_NVS No se puede abrir el sistema NVS\r\n", _name);
 		return false;
 	}
 	if((err = _fs->restore(param_id, data, size, type)) != osOK){
-		DEBUG_TRACE("\r\n%s ERR_NVS [0x%x] recuperando %s", (char*)_name, (int)err, param_id);
+		DEBUG_TRACE("%s ERR_NVS [0x%x] recuperando %s\r\n", (char*)_name, (int)err, param_id);
 	}
 	else{
-		DEBUG_TRACE("\r\n%s Parm %s recuperados de memoria NV", (char*)_name, param_id);
+		DEBUG_TRACE("%s Parm %s recuperados de memoria NV\r\n", (char*)_name, param_id);
 	}
 	_fs->close();
 	return ((err == osOK)? true : false);

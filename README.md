@@ -8,6 +8,12 @@ Las clases que hereden el interfaz deberán implementar las funciones virtuales p
   
 ## Changelog
 
+*07.03.2018*
+>**"Habilito DefaultPutTimeout para evitar dead-locks ocultos en mutex.lock"**
+>
+- [x] Mejora control de dead-locks en mutex
+  
+
 *14.02.2018*
 >**"Habilito flag ready una vez procesado Init::EV_ENTRY"**
 >

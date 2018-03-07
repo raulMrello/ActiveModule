@@ -1,10 +1,11 @@
 /*
  * ActiveModule.h
  *
- *  Versión: 14 Feb 2018
+ *  Versión: 7 Mar 2018
  *  Author: raulMrello
  *
  *	Changelog: 
+ *	- @7Mar2018.001 Habilito DefaultPutTimeout para evitar dead-locks ocultos en mutex.lock
  *	- @14Feb2018.001 Cambio 'ready=true' una vez que se haya completado el evento Init::EV_ENTRY.
  *
  *	ActiveModule es un interfaz que proporciona características comunes de funcionamiento relativas a los módulos de
@@ -68,11 +69,15 @@ class ActiveModule : public StateMachine {
 
     /** Interfaz para postear un mensaje de la máquina de estados en el Mailbox de la clase heredera
      *  @param msg Mensaje a postear
+     *  @return Resultado
      */
-    virtual void putMessage(State::Msg *msg) = 0;
+    virtual osStatus putMessage(State::Msg *msg) = 0;
 
 
   protected:
+
+    /** Tiempo de espera por defecto al postear un mensaje */
+    static const uint32_t DefaultPutTimeout = 5000;
 
     const char* _pub_topic_base;				/// Nombre del topic base para las publicaciones
     const char* _sub_topic_base;				/// Nombre del topic base para las suscripciones
