@@ -2,7 +2,7 @@
 
 ActiveModule is a C++ class implementation of the ACTIVE OBJECT design pattern as explained [here](http://www.state-machine.com/doc/AN_Active_Objects_for_Embedded.pdf) and following this common schema:
 
-![](https://github.com/raulMrello/ActiveModule/AO.jpg)
+![](https://raw.githubusercontent.com/raulMrello/ActiveModule/master/AO.jpg)
 
 
   
