@@ -1,28 +1,26 @@
 # ActiveModule
 
-ActiveModule es un componente que define una interfaz por medio de la cual se pueden crear objetos activos con su propia máquina de estados, suscripción y publicación a topics MQLib.
-Las clases que hereden el interfaz deberán implementar las funciones virtuales puras que se definen en éste.
+ActiveModule is a C++ class implementation of the ACTIVE OBJECT design pattern as explained [here](http://www.state-machine.com/doc/AN_Active_Objects_for_Embedded.pdf) and following this common schema:
 
-- Versión 13 Feb 2018
-  
+![](https://github.com/raulMrello/ActiveModule/AO.jpg)
+
+
   
 ## Changelog
 
-*07.03.2018*
->**"Habilito DefaultPutTimeout para evitar dead-locks ocultos en mutex.lock"**
->
-- [x] Mejora control de dead-locks en mutex
+---
+### **17.01.2019**
+- [x] Added ```./class_impl/build_impl.py``` script file to build ```ActiveModule``` derived classes in desired output folder.
+
+---
+### **07.03.2018**
+- [x] Enabled ```DefaultPutTimeout``` to avoid dead-locks in ```mutex.lock```
+
+---
+### **14.02.2018**
+- [x] Enabled ```ready``` flag once processed ```Init::EV_ENTRY```
   
 
-*14.02.2018*
->**"Habilito flag ready una vez procesado Init::EV_ENTRY"**
->
-- [x] Compatibilizo para que sea funcional en ambas plataformas.
-  
-
-*13.02.2018*
->**"Compatibilidad MBED y ESP-IDF"**
->
-- [x] Compatibilizo para que sea funcional en ambas plataformas.
-  
-
+---
+### **13.02.2018*
+- [x] Added MBED and ESP-IDF compatibility

@@ -11,15 +11,9 @@
 //------------------------------------------------------------------------------------
 //-- PRIVATE TYPEDEFS ----------------------------------------------------------------
 //------------------------------------------------------------------------------------
+#define _MODULE_ 	_name
+#define _EXPR_		(_defdbg && !IS_ISR())
 
-/** Macro para imprimir trazas de depuración, siempre que se haya configurado un objeto
- *	Logger válido (ej: _debug)
- */
-
-#define DEBUG_TRACE(format, ...)			\
-if(_defdbg && !IS_ISR()){					\
-	SYSLOG_TRACE(format, ##__VA_ARGS__);	\
-}											\
 
 
 //------------------------------------------------------------------------------------
@@ -64,7 +58,7 @@ void ActiveModule::task() {
 
     // espera a que se asigne un topic base
     do{
-    	Thread::wait(1);
+    	Thread::wait(100);
     }while(!_pub_topic_base || !_sub_topic_base);
 
     // asigna máquina de estados por defecto  y la inicia
@@ -86,14 +80,14 @@ void ActiveModule::task() {
 bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
 	int err;
 	if(!_fs->open()){
-		DEBUG_TRACE("%s ERR_NVS No se puede abrir el sistema NVS\r\n", (char*)_name);
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_NVS No se puede abrir el sistema NVS");
 		return false;
 	}
 	if((err = _fs->save(param_id, data, size, type)) != osOK){
-		DEBUG_TRACE("%s ERR_NVS [0x%x] grabando %s\r\n", (char*)_name, (int)err, param_id);
+		DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR_NVS [0x%x] grabando %s", (int)err, param_id);
 	}
 	else{
-		DEBUG_TRACE("%s Parm %s guardados en memoria NV\r\n", (char*)_name, param_id);
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s guardados en memoria NV", param_id);
 	}
 	_fs->close();
 	return ((err == osOK)? true : false);
@@ -104,14 +98,14 @@ bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, 
 bool ActiveModule::restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
 	int err;
 	if(!_fs->open()){
-		DEBUG_TRACE("%s ERR_NVS No se puede abrir el sistema NVS\r\n", _name);
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_NVS No se puede abrir el sistema NVS");
 		return false;
 	}
 	if((err = _fs->restore(param_id, data, size, type)) != osOK){
-		DEBUG_TRACE("%s ERR_NVS [0x%x] recuperando %s\r\n", (char*)_name, (int)err, param_id);
+		DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR_NVS [0x%x] recuperando %s", (int)err, param_id);
 	}
 	else{
-		DEBUG_TRACE("%s Parm %s recuperados de memoria NV\r\n", (char*)_name, param_id);
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s recuperados de memoria NV", param_id);
 	}
 	_fs->close();
 	return ((err == osOK)? true : false);

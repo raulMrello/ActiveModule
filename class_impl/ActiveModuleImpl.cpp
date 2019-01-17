@@ -1,17 +1,15 @@
 /*
- * TemplateImpl.cpp
+ * ActiveModuleImpl.cpp
  *
- *  Created on: Ene 2018
- *      Author: raulMrello
  */
 
-#include "TemplateImpl.h"
+#include "ActiveModuleImpl.h"
 
 //------------------------------------------------------------------------------------
 //-- PRIVATE TYPEDEFS ----------------------------------------------------------------
 //------------------------------------------------------------------------------------
 
-/** Macro para imprimir trazas de depuración, siempre que se haya configurado un objeto
+/** Print log macros
  *	Logger válido (ej: _debug)
  */
 
@@ -26,9 +24,9 @@ if(ActiveModule::_defdbg){					\
 
 
 //------------------------------------------------------------------------------------
-TemplateImpl::TemplateImpl(FSManager* fs, bool defdbg) : ActiveModule("TemplateImpl", osPriorityNormal, OS_STACK_SIZE, fs, defdbg) {
-	_publicationCb = callback(this, &TemplateImpl::publicationCb);
-	_subscriptionCb = callback(this, &TemplateImpl::subscriptionCb);
+ActiveModuleImpl::ActiveModuleImpl(FSManager* fs, bool defdbg) : ActiveModule("ActiveModuleImpl", osPriorityNormal, OS_STACK_SIZE, fs, defdbg) {
+	_publicationCb = callback(this, &ActiveModuleImpl::publicationCb);
+	_subscriptionCb = callback(this, &ActiveModuleImpl::subscriptionCb);
 }
 
 
@@ -38,7 +36,7 @@ TemplateImpl::TemplateImpl(FSManager* fs, bool defdbg) : ActiveModule("TemplateI
 
 
 //------------------------------------------------------------------------------------
-void TemplateImpl::subscriptionCb(const char* topic, void* msg, uint16_t msg_len){
+void ActiveModuleImpl::subscriptionCb(const char* topic, void* msg, uint16_t msg_len){
     // procesa un evento, por ejemplo "xxx/which/event"
     if(MQ::MQClient::isTopicToken(topic, "/which/event")){
         DEBUG_TRACE("\r\nTemplImp\t Recibido topic %s", topic);
@@ -75,14 +73,14 @@ void TemplateImpl::subscriptionCb(const char* topic, void* msg, uint16_t msg_len
 }
 
 //------------------------------------------------------------------------------------
-State::StateResult TemplateImpl::Init_EventHandler(State::StateEvent* se){
+State::StateResult ActiveModuleImpl::Init_EventHandler(State::StateEvent* se){
 	State::Msg* st_msg = (State::Msg*)se->oe->value.p;
     switch((int)se->evt){
         case State::EV_ENTRY:{
         	int err = osOK;
         	DEBUG_TRACE("\r\nTemplImp\t Iniciando recuperación de datos...");
         	// recupera los datos de memoria NV
-        	err = _fs->restore("TemplateImplCfg", &_cfg, sizeof(Config), NVSInterface::TypeBlob);
+        	err = _fs->restore("ActiveModuleImplCfg", &_cfg, sizeof(Config), NVSInterface::TypeBlob);
         	if(err == osOK){
             	// chequea la coherencia de los datos y en caso de algo no esté bien, establece los datos por defecto
             	// almacenándolos de nuevo en memoria NV.
@@ -155,26 +153,26 @@ State::StateResult TemplateImpl::Init_EventHandler(State::StateEvent* se){
 
 
 //------------------------------------------------------------------------------------
-void TemplateImpl::putMessage(State::Msg *msg){
+void ActiveModuleImpl::putMessage(State::Msg *msg){
     _queue.put(msg);
 }
 
 
 //------------------------------------------------------------------------------------
-osEvent TemplateImpl:: getOsEvent(){
+osEvent ActiveModuleImpl:: getOsEvent(){
 	return _queue.get();
 }
 
 
 
 //------------------------------------------------------------------------------------
-void TemplateImpl::publicationCb(const char* topic, int32_t result){
+void ActiveModuleImpl::publicationCb(const char* topic, int32_t result){
 
 }
 
 
 //------------------------------------------------------------------------------------
-bool TemplateImpl::checkIntegrity(){
+bool ActiveModuleImpl::checkIntegrity(){
 	bool chk_ok = true;
 	/* Chequea integridad de la configuración */
 	// TODO
@@ -188,7 +186,7 @@ bool TemplateImpl::checkIntegrity(){
 
 
 //------------------------------------------------------------------------------------
-void TemplateImpl::setDefaultConfig(){
+void ActiveModuleImpl::setDefaultConfig(){
 	/* Establece configuración por defecto */
 	//TODO
 	

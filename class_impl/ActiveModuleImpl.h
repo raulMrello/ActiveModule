@@ -1,33 +1,30 @@
 /*
- * TemplateImpl.h
+ * ActiveModuleImpl.h
  *
- *  Created on: Ene 2018
- *      Author: raulMrello
- *
- *	TemplateImpl es una plantilla para implementar una clase que hereda de ActiveModule
+ *	ActiveModuleImpl is a class derived from ActiveModule
  */
  
-#ifndef __TemplateImpl__H
-#define __TemplateImpl__H
+#ifndef __ActiveModuleImpl__H
+#define __ActiveModuleImpl__H
 
 #include "mbed.h"
 #include "ActiveModule.h"
 
 
    
-class TemplateImpl : public ActiveModule {
+class ActiveModuleImpl : public ActiveModule {
   public:
               
     /** Constructor por defecto
      * 	@param fs Objeto FSManager para operaciones de backup
      * 	@param defdbg Flag para habilitar depuración por defecto
      */
-    TemplateImpl(FSManager* fs, bool defdbg = false);
+    ActiveModuleImpl(FSManager* fs, bool defdbg = false);
 
 
     /** Destructor
      */
-    virtual ~TemplateImpl(){}
+    virtual ~ActiveModuleImpl(){}
 
   protected:
 
@@ -99,7 +96,7 @@ class TemplateImpl : public ActiveModule {
 
 };
      
-#endif /*__TemplateImpl__H */
+#endif /*__ActiveModuleImpl__H */
 
 /**** END OF FILE ****/
 
