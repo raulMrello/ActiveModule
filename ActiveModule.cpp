@@ -64,9 +64,6 @@ void ActiveModule::task() {
     // asigna máquina de estados por defecto  y la inicia
     initState(&_stInit);
 
-    // marca como listo para ejecución
-    _ready = true;
-
     // Ejecuta máquinas de estados y espera mensajes que son delegados a la máquina de estados
     // de la clase heredera
     for(;;){
