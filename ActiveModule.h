@@ -85,12 +85,12 @@ class ActiveModule : public StateMachine {
     MQ::SubscribeCallback   _subscriptionCb;    /// Callback de suscripción a topics
     MQ::PublishCallback     _publicationCb;     /// Callback de publicación en topics
     FSManager* _fs;								/// Gestor del sistema de backup en memoria NVS
+    bool _ready;								/// Flag para indicar el estado del módulo a nivel de thread
 
   private:
 
     static const uint8_t MaxNameLength = 16;	/// Tamaño del nombre
     Thread* _th;								/// Thread asociado al módulo
-    bool _ready;								/// Flag para indicar el estado del módulo a nivel de thread
     char _name[MaxNameLength+1];				/// Nombre del módulo (ej. "[Name]..........")
 
 
