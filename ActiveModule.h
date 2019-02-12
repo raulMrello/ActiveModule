@@ -84,6 +84,7 @@ class ActiveModule : public StateMachine {
     bool _defdbg;								/// Flag para depuración por defecto
     MQ::SubscribeCallback   _subscriptionCb;    /// Callback de suscripción a topics
     MQ::PublishCallback     _publicationCb;     /// Callback de publicación en topics
+    FSManager* _fs;								/// Gestor del sistema de backup en memoria NVS
 
   private:
 
@@ -92,7 +93,6 @@ class ActiveModule : public StateMachine {
     bool _ready;								/// Flag para indicar el estado del módulo a nivel de thread
     char _name[MaxNameLength+1];				/// Nombre del módulo (ej. "[Name]..........")
 
-    FSManager* _fs;								/// Gestor del sistema de backup en memoria NVS
 
     State _stInit;								/// Variable de estado para stInit
 
