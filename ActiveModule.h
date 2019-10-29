@@ -77,7 +77,7 @@ class ActiveModule : public StateMachine {
   protected:
 
     /** Tiempo de espera por defecto al postear un mensaje */
-    static const uint32_t DefaultPutTimeout = 5000;
+    static const uint32_t DefaultPutTimeout = MQ::MQBroker::DefaultMutexTimeout;
 
     const char* _pub_topic_base;				/// Nombre del topic base para las publicaciones
     const char* _sub_topic_base;				/// Nombre del topic base para las suscripciones
