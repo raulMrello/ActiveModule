@@ -45,6 +45,7 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 
     // Inicia thread
 	_th->start(callback(this, &ActiveModule::task));
+	_sem_th.wait();
 }
 
 
@@ -55,11 +56,12 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 
 //------------------------------------------------------------------------------------
 void ActiveModule::task() {
+	_sem_th.release();
 
     // espera a que se asigne un topic base
-    do{
+    while(!_pub_topic_base || !_sub_topic_base){
     	Thread::wait(100);
-    }while(!_pub_topic_base || !_sub_topic_base);
+    }
 
     // asigna máquina de estados por defecto  y la inicia
     initState(&_stInit);

@@ -92,6 +92,7 @@ class ActiveModule : public StateMachine {
     static const uint8_t MaxNameLength = 16;	/// Tama�o del nombre
     Thread* _th;								/// Thread asociado al m�dulo
     char _name[MaxNameLength+1];				/// Nombre del m�dulo (ej. "[Name]..........")
+    Semaphore _sem_th{0,1};
 
 
 
