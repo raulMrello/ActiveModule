@@ -67,11 +67,25 @@ class ActiveModule : public StateMachine {
     }
 
 
+	#if ESP_PLATFORM == 1
+    /** Registra su operativa en el gestor watchdog de tareas
+     * 	@param millis Temporización para enviar el ping de actividad
+     */
+    void attachToTaskWatchdog(uint32_t millis);
+	#endif
+
+
+	#if ESP_PLATFORM == 1
+	/** Desregistra su operativa del gestor watchdog de tareas
+	 */
+	void detachFromTaskWatchdog();
+	#endif
+
     /** Interfaz para postear un mensaje de la mï¿½quina de estados en el Mailbox de la clase heredera
      *  @param msg Mensaje a postear
      *  @return Resultado
      */
-    virtual osStatus putMessage(State::Msg *msg) = 0;
+    virtual osStatus putMessage(State::Msg *msg);
 
 
   protected:
@@ -86,6 +100,15 @@ class ActiveModule : public StateMachine {
     MQ::PublishCallback     _publicationCb;     /// Callback de publicaciï¿½n en topics
     FSManager* _fs;								/// Gestor del sistema de backup en memoria NVS
     bool _ready;								/// Flag para indicar el estado del mï¿½dulo a nivel de thread
+    bool _wdt_handled;							/// Flag para indicar si debe reportar al TaskWatchdog
+    uint32_t _wdt_millis;						/// Cadencia en ms para notificar actividad al TaskWatchdog
+
+    /** Máximo número de mensajes alojables en la cola asociada a la máquina de estados */
+    static const uint32_t DefaultMaxQueueMessages = 16;
+
+    /** Cola de mensajes de la máquina de estados */
+    Queue<State::Msg, DefaultMaxQueueMessages> _queue;
+
 
   private:
 
@@ -100,15 +123,16 @@ class ActiveModule : public StateMachine {
 
     State _stInit;								/// Variable de estado para stInit
 
-    /** Rutina de entrada a la mï¿½quina de estados (gestionada por la clase heredera)
-     */
-    virtual State::StateResult Init_EventHandler(State::StateEvent* se) = 0;
-
 
     /** Interfaz para obtener un evento osEvent de la clase heredera
      *  @param msg Mensaje a postear
      */
-    virtual osEvent getOsEvent() = 0;
+    virtual osEvent getOsEvent();
+
+
+    /** Rutina de entrada a la mï¿½quina de estados (gestionada por la clase heredera)
+     */
+    virtual State::StateResult Init_EventHandler(State::StateEvent* se) = 0;
 
 
 	/** Callback invocada al recibir una actualizaciï¿½n de un topic local al que estï¿½ suscrito
@@ -165,6 +189,15 @@ class ActiveModule : public StateMachine {
 	 * 	@return True: ï¿½xito, False: no se pudo recuperar
 	 */
 	virtual bool restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type);
+
+
+	#if ESP_PLATFORM == 1
+	/** Notifica al TaskWatchdog que está operativa
+	 */
+	void _wdogKick(){
+		esp_task_wdt_reset();
+	}
+	#endif
 
 
   private:
