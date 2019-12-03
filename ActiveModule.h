@@ -77,7 +77,7 @@ class ActiveModule : public StateMachine {
   protected:
 
     /** Tiempo de espera por defecto al postear un mensaje */
-    static const uint32_t DefaultPutTimeout = 5000;
+    static const uint32_t DefaultPutTimeout = MQ::MQBroker::DefaultMutexTimeout;
 
     const char* _pub_topic_base;				/// Nombre del topic base para las publicaciones
     const char* _sub_topic_base;				/// Nombre del topic base para las suscripciones
@@ -92,6 +92,7 @@ class ActiveModule : public StateMachine {
     static const uint8_t MaxNameLength = 16;	/// Tama�o del nombre
     Thread* _th;								/// Thread asociado al m�dulo
     char _name[MaxNameLength+1];				/// Nombre del m�dulo (ej. "[Name]..........")
+    Semaphore _sem_th{0,1};
 
 
 
