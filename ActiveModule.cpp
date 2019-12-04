@@ -53,20 +53,23 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 
 
 //------------------------------------------------------------------------------------
-void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic) {
+void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic, const char* wdog_name) {
 	_wdt_topic = new char[strlen(wdog_topic)+1]();
 	MBED_ASSERT(_wdt_topic);
 	strcpy(_wdt_topic, wdog_topic);
-	uint8_t nodata=0;
-	if(MQ::MQClient::publish(_wdt_topic, &nodata, sizeof(uint8_t), &_publicationCb) == MQ::SUCCESS){
+	_wdt_name = new char[strlen(wdog_name)+1]();
+	MBED_ASSERT(_wdt_name);
+	strcpy(_wdt_name, wdog_name);
+
+	if(MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb) == MQ::SUCCESS){
 		_wdt_handled = true;
 		_wdt_millis = millis;
-		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Registrado topic %s en TaskWatchdog", _wdt_topic);
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Registrado componente %s en TaskWatchdog", _wdt_name);
 	}
 	else{
 		_wdt_handled = false;
 		_wdt_millis = osWaitForever;
-		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERROR: Registrado topic %s en TaskWatchdog", _wdt_topic);
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERROR: Registrando componente %s en TaskWatchdog", _wdt_name);
 	}
 }
 
@@ -117,8 +120,7 @@ osEvent ActiveModule::getOsEvent(){
 		// si está habilitada la notificación al task_watchdog...
 		if(_wdt_handled){
 			// publica keepalive
-			uint8_t nodata=0;
-			MQ::MQClient::publish(_wdt_topic, &nodata, sizeof(uint8_t), &_publicationCb);
+			MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb);
 		}
 	}while (oe.status == osEventTimeout);
 	return oe;

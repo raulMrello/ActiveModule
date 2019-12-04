@@ -70,8 +70,9 @@ class ActiveModule : public StateMachine {
     /** Registra su operativa en el gestor watchdog de tareas
      * 	@param millis Temporización para enviar el ping de actividad
      * 	@param wdg_topic Topic en el que publicar la notificación de actividad
+     * 	@param name Nombre utilizado para publicar
      */
-    void attachToTaskWatchdog(uint32_t millis, const char* wdg_topic);
+    void attachToTaskWatchdog(uint32_t millis, const char* wdg_topic, const char* name);
 
 
     /** Interfaz para postear un mensaje de la mï¿½quina de estados en el Mailbox de la clase heredera
@@ -96,6 +97,7 @@ class ActiveModule : public StateMachine {
     bool _wdt_handled;							/// Flag para indicar si debe reportar al TaskWatchdog
     uint32_t _wdt_millis;						/// Cadencia en ms para notificar actividad al TaskWatchdog
     char* _wdt_topic;							/// Topic en el que publicar la notificación de actividad
+    char* _wdt_name;							/// Nombre del componente que publica la notificación
 
     /** Máximo número de mensajes alojables en la cola asociada a la máquina de estados */
     static const uint32_t DefaultMaxQueueMessages = 16;
