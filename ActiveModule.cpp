@@ -53,34 +53,22 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 
 
 //------------------------------------------------------------------------------------
-#if ESP_PLATFORM == 1
-void ActiveModule::attachToTaskWatchdog(uint32_t millis) {
-	if(esp_task_wdt_add(_th->get_id()) != ESP_OK){
-		DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error registrando tarea %x en TaskWatchdog", (uint32_t)_th->get_id());
-	}
-	else{
+void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic) {
+	_wdt_topic = new char[strlen(wdog_topic)+1]();
+	MBED_ASSERT(_wdt_topic);
+	strcpy(_wdt_topic, wdog_topic);
+	uint8_t nodata=0;
+	if(MQ::MQClient::publish(_wdt_topic, &nodata, sizeof(uint8_t), &_publicationCb) == MQ::SUCCESS){
 		_wdt_handled = true;
 		_wdt_millis = millis;
-		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Registrada tarea %x en TaskWatchdog", (uint32_t)_th->get_id());
-	}
-}
-#endif
-
-
-
-//------------------------------------------------------------------------------------
-#if ESP_PLATFORM == 1
-void ActiveModule::detachFromTaskWatchdog() {
-	if(esp_task_wdt_delete(_th->get_id()) != ESP_OK){
-		DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error des-registrando tarea %x de TaskWatchdog", (uint32_t)_th->get_id());
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Registrado topic %s en TaskWatchdog", _wdt_topic);
 	}
 	else{
 		_wdt_handled = false;
 		_wdt_millis = osWaitForever;
-		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Desregistrada tarea %x de TaskWatchdog", (uint32_t)_th->get_id());
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERROR: Registrado topic %s en TaskWatchdog", _wdt_topic);
 	}
 }
-#endif
 
 
 //------------------------------------------------------------------------------------
@@ -126,8 +114,11 @@ osEvent ActiveModule::getOsEvent(){
 	osEvent oe;
 	do{
 		oe = _queue.get(millis);
+		// si está habilitada la notificación al task_watchdog...
 		if(_wdt_handled){
-			_wdogKick();
+			// publica keepalive
+			uint8_t nodata=0;
+			MQ::MQClient::publish(_wdt_topic, &nodata, sizeof(uint8_t), &_publicationCb);
 		}
 	}while (oe.status == osEventTimeout);
 	return oe;

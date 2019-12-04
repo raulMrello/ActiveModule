@@ -48,7 +48,7 @@ class ActiveModule : public StateMachine {
     /** Chequea si el mï¿½dulo tiene las trazas de depuraciï¿½n activadas
      * 	@return True: activadas, False: desactivadas
      */
-    bool degugActive() { return _defdbg; }
+    bool debugActive() { return _defdbg; }
   
   
     /** Configura el topic base para la publicaciï¿½n de mensajes
@@ -67,19 +67,12 @@ class ActiveModule : public StateMachine {
     }
 
 
-	#if ESP_PLATFORM == 1
     /** Registra su operativa en el gestor watchdog de tareas
      * 	@param millis Temporización para enviar el ping de actividad
+     * 	@param wdg_topic Topic en el que publicar la notificación de actividad
      */
-    void attachToTaskWatchdog(uint32_t millis);
-	#endif
+    void attachToTaskWatchdog(uint32_t millis, const char* wdg_topic);
 
-
-	#if ESP_PLATFORM == 1
-	/** Desregistra su operativa del gestor watchdog de tareas
-	 */
-	void detachFromTaskWatchdog();
-	#endif
 
     /** Interfaz para postear un mensaje de la mï¿½quina de estados en el Mailbox de la clase heredera
      *  @param msg Mensaje a postear
@@ -102,6 +95,7 @@ class ActiveModule : public StateMachine {
     bool _ready;								/// Flag para indicar el estado del mï¿½dulo a nivel de thread
     bool _wdt_handled;							/// Flag para indicar si debe reportar al TaskWatchdog
     uint32_t _wdt_millis;						/// Cadencia en ms para notificar actividad al TaskWatchdog
+    char* _wdt_topic;							/// Topic en el que publicar la notificación de actividad
 
     /** Máximo número de mensajes alojables en la cola asociada a la máquina de estados */
     static const uint32_t DefaultMaxQueueMessages = 16;
@@ -109,17 +103,6 @@ class ActiveModule : public StateMachine {
     /** Cola de mensajes de la máquina de estados */
     Queue<State::Msg, DefaultMaxQueueMessages> _queue;
 
-
-  private:
-
-    static const uint8_t MaxNameLength = 16;	/// Tamaï¿½o del nombre
-    Thread* _th;								/// Thread asociado al mï¿½dulo
-    char _name[MaxNameLength+1];				/// Nombre del mï¿½dulo (ej. "[Name]..........")
-    Semaphore _sem_th{0,1};
-
-
-
-  protected:
 
     State _stInit;								/// Variable de estado para stInit
 
@@ -191,16 +174,12 @@ class ActiveModule : public StateMachine {
 	virtual bool restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type);
 
 
-	#if ESP_PLATFORM == 1
-	/** Notifica al TaskWatchdog que está operativa
-	 */
-	void _wdogKick(){
-		esp_task_wdt_reset();
-	}
-	#endif
-
-
   private:
+
+    static const uint8_t MaxNameLength = 16;	/// Tamaï¿½o del nombre
+    Thread* _th;								/// Thread asociado al mï¿½dulo
+    char _name[MaxNameLength+1];				/// Nombre del mï¿½dulo (ej. "[Name]..........")
+    Semaphore _sem_th{0,1};
 
     /** Hilo de ejecuciï¿½n propio.
      */
