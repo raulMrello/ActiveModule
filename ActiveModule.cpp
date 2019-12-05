@@ -36,6 +36,8 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 	_th = new Thread(priority, stack_size, NULL, name);
 	_pub_topic_base = NULL;
 	_sub_topic_base = NULL;
+	_wdt_handled = false;
+	_wdt_millis = osWaitForever;
 
     // Asigno manejador de mensajes en el Mailbox
     StateMachine::attachMessageHandler(new Callback<osStatus(State::Msg*)>(this, &ActiveModule::putMessage));
@@ -46,6 +48,39 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
     // Inicia thread
 	_th->start(callback(this, &ActiveModule::task));
 	_sem_th.wait();
+}
+
+
+
+//------------------------------------------------------------------------------------
+void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic, const char* wdog_name) {
+	_wdt_topic = new char[strlen(wdog_topic)+1]();
+	MBED_ASSERT(_wdt_topic);
+	strcpy(_wdt_topic, wdog_topic);
+	_wdt_name = new char[strlen(wdog_name)+1]();
+	MBED_ASSERT(_wdt_name);
+	strcpy(_wdt_name, wdog_name);
+
+	if(MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb) == MQ::SUCCESS){
+		_wdt_handled = true;
+		_wdt_millis = millis;
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Registrado componente %s en TaskWatchdog", _wdt_name);
+	}
+	else{
+		_wdt_handled = false;
+		_wdt_millis = osWaitForever;
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERROR: Registrando componente %s en TaskWatchdog", _wdt_name);
+	}
+}
+
+
+//------------------------------------------------------------------------------------
+osStatus ActiveModule::putMessage(State::Msg *msg){
+    osStatus ost = _queue.put(msg, ActiveModule::DefaultPutTimeout);
+    if(ost != osOK){
+        DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %d", ost);
+    }
+    return ost;
 }
 
 
@@ -74,6 +109,22 @@ void ActiveModule::task() {
     }
 }
 
+
+
+//------------------------------------------------------------------------------------
+osEvent ActiveModule::getOsEvent(){
+	uint32_t millis = (_wdt_handled)? _wdt_millis : osWaitForever;
+	osEvent oe;
+	do{
+		oe = _queue.get(millis);
+		// si está habilitada la notificación al task_watchdog...
+		if(_wdt_handled){
+			// publica keepalive
+			MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb);
+		}
+	}while (oe.status == osEventTimeout);
+	return oe;
+}
 
 //------------------------------------------------------------------------------------
 bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
