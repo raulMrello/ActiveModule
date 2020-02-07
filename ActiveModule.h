@@ -83,6 +83,8 @@ class ActiveModule : public StateMachine {
 
 
   protected:
+    int32_t _queue_count;
+    static int32_t _max_queue_count;
 
     /** Tiempo de espera por defecto al postear un mensaje */
     static const uint32_t DefaultPutTimeout = MQ::MQBroker::DefaultMutexTimeout;
@@ -100,7 +102,7 @@ class ActiveModule : public StateMachine {
     char* _wdt_name;							/// Nombre del componente que publica la notificación
 
     /** Máximo número de mensajes alojables en la cola asociada a la máquina de estados */
-    static const uint32_t DefaultMaxQueueMessages = 16;
+    static const uint32_t DefaultMaxQueueMessages = 32;
 
     /** Cola de mensajes de la máquina de estados */
     Queue<State::Msg, DefaultMaxQueueMessages> _queue;
