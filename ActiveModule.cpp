@@ -124,7 +124,10 @@ osEvent ActiveModule::getOsEvent(){
 		// si está habilitada la notificación al task_watchdog...
 		if(_wdt_handled){
 			// publica keepalive
-			MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb);
+			int32_t err = MQ::SUCCESS;
+			if((err = MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb)) != MQ::SUCCESS){
+				DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error publicando %s desde %s", _wdt_topic, _wdt_name);
+			}
 		}
 	}while (oe.status == osEventTimeout);
 	_queue_count--;
