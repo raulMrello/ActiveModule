@@ -13,7 +13,7 @@
 //------------------------------------------------------------------------------------
 #define _MODULE_ 	_name
 #define _EXPR_		(_defdbg && !IS_ISR())
-
+int32_t ActiveModule::_max_queue_count = 0;
 
 
 //------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@
 
 //------------------------------------------------------------------------------------
 ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack_size, FSManager* fs, bool defdbg) : StateMachine(){
-
+	_queue_count = 0;
 	// Inicializa flag de estado, propiedades internas y thread
 	_ready = false;
 	_defdbg = defdbg;
@@ -76,6 +76,10 @@ void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic,
 
 //------------------------------------------------------------------------------------
 osStatus ActiveModule::putMessage(State::Msg *msg){
+	if(++_queue_count > _max_queue_count){
+		_max_queue_count = _queue_count;
+		DEBUG_TRACE_V(_EXPR_, _MODULE_, "QUEUE_COUNT = %d", _queue_count);
+	}
     osStatus ost = _queue.put(msg, ActiveModule::DefaultPutTimeout);
     if(ost != osOK){
         DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %d", ost);
@@ -120,9 +124,16 @@ osEvent ActiveModule::getOsEvent(){
 		// si está habilitada la notificación al task_watchdog...
 		if(_wdt_handled){
 			// publica keepalive
-			MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb);
+			int32_t err = MQ::SUCCESS;
+			if((err = MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb)) != MQ::SUCCESS){
+				DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error publicando %s desde %s", _wdt_topic, _wdt_name);
+			}
 		}
 	}while (oe.status == osEventTimeout);
+	_queue_count--;
+	if(_queue_count < 0){
+		_queue_count = 0;
+	}
 	return oe;
 }
 
