@@ -102,7 +102,7 @@ class ActiveModule : public StateMachine {
     char* _wdt_name;							/// Nombre del componente que publica la notificación
 
     /** Máximo número de mensajes alojables en la cola asociada a la máquina de estados */
-    static const uint32_t DefaultMaxQueueMessages = 32;
+    static const uint32_t DefaultMaxQueueMessages = 48;
 
     /** Cola de mensajes de la máquina de estados */
     Queue<State::Msg, DefaultMaxQueueMessages> _queue;
