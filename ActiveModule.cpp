@@ -166,7 +166,7 @@ bool ActiveModule::restoreParameter(const char* param_id, void* data, size_t siz
 		DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR_NVS [0x%x] recuperando %s", (int)err, param_id);
 	}
 	else{
-		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s eliminado de memoria NV", param_id);
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s recuperado de memoria NV", param_id);
 	}
 	_fs->close();
 	return ((err == osOK)? true : false);
