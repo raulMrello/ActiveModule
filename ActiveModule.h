@@ -68,8 +68,8 @@ class ActiveModule : public StateMachine {
 
 
     /** Registra su operativa en el gestor watchdog de tareas
-     * 	@param millis Temporización para enviar el ping de actividad
-     * 	@param wdg_topic Topic en el que publicar la notificación de actividad
+     * 	@param millis Temporizaciï¿½n para enviar el ping de actividad
+     * 	@param wdg_topic Topic en el que publicar la notificaciï¿½n de actividad
      * 	@param name Nombre utilizado para publicar
      */
     void attachToTaskWatchdog(uint32_t millis, const char* wdg_topic, const char* name);
@@ -98,13 +98,13 @@ class ActiveModule : public StateMachine {
     bool _ready;								/// Flag para indicar el estado del mï¿½dulo a nivel de thread
     bool _wdt_handled;							/// Flag para indicar si debe reportar al TaskWatchdog
     uint32_t _wdt_millis;						/// Cadencia en ms para notificar actividad al TaskWatchdog
-    char* _wdt_topic;							/// Topic en el que publicar la notificación de actividad
-    char* _wdt_name;							/// Nombre del componente que publica la notificación
+    char* _wdt_topic;							/// Topic en el que publicar la notificaciï¿½n de actividad
+    char* _wdt_name;							/// Nombre del componente que publica la notificaciï¿½n
 
-    /** Máximo número de mensajes alojables en la cola asociada a la máquina de estados */
+    /** Mï¿½ximo nï¿½mero de mensajes alojables en la cola asociada a la mï¿½quina de estados */
     static const uint32_t DefaultMaxQueueMessages = 48;
 
-    /** Cola de mensajes de la máquina de estados */
+    /** Cola de mensajes de la mï¿½quina de estados */
     Queue<State::Msg, DefaultMaxQueueMessages> _queue;
 
 
@@ -177,7 +177,12 @@ class ActiveModule : public StateMachine {
 	 */
 	virtual bool restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type);
 
-
+  /* Elimina un parametro de la memoria NV
+   * @param param_id Identificador del parametro
+   * @return True: exito, False: no se pudo recuperar
+  */
+  virtual bool removeParameter(const char* param_id);
+  
   private:
 
     static const uint8_t MaxNameLength = 16;	/// Tamaï¿½o del nombre

@@ -1,7 +1,7 @@
 /*
  * ActiveModule.cpp
  *
- *  Versión: 7 Mar 2018
+ *  Versiï¿½n: 7 Mar 2018
  *  Author: raulMrello
  */
 
@@ -42,7 +42,7 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
     // Asigno manejador de mensajes en el Mailbox
     StateMachine::attachMessageHandler(new Callback<osStatus(State::Msg*)>(this, &ActiveModule::putMessage));
 
-    // creo máquinas de estado inicial
+    // creo mï¿½quinas de estado inicial
     _stInit.setHandler(callback(this, &ActiveModule::Init_EventHandler));
 
     // Inicia thread
@@ -102,10 +102,10 @@ void ActiveModule::task() {
     	Thread::wait(100);
     }
 
-    // asigna máquina de estados por defecto  y la inicia
+    // asigna mï¿½quina de estados por defecto  y la inicia
     initState(&_stInit);
 
-    // Ejecuta máquinas de estados y espera mensajes que son delegados a la máquina de estados
+    // Ejecuta mï¿½quinas de estados y espera mensajes que son delegados a la mï¿½quina de estados
     // de la clase heredera
     for(;;){
         osEvent oe = getOsEvent();
@@ -121,7 +121,7 @@ osEvent ActiveModule::getOsEvent(){
 	osEvent oe;
 	do{
 		oe = _queue.get(millis);
-		// si está habilitada la notificación al task_watchdog...
+		// si estï¿½ habilitada la notificaciï¿½n al task_watchdog...
 		if(_wdt_handled){
 			// publica keepalive
 			int32_t err = MQ::SUCCESS;
@@ -164,6 +164,23 @@ bool ActiveModule::restoreParameter(const char* param_id, void* data, size_t siz
 	}
 	if((err = _fs->restore(param_id, data, size, type)) != osOK){
 		DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR_NVS [0x%x] recuperando %s", (int)err, param_id);
+	}
+	else{
+		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s eliminado de memoria NV", param_id);
+	}
+	_fs->close();
+	return ((err == osOK)? true : false);
+}
+
+//------------------------------------------------------------------------------------
+bool ActiveModule::removeParameter(const char* param_id){
+	int err;
+	if(!_fs->open()){
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_NVS No se puede abrir el sistema NVS");
+		return false;
+	}
+	if((err = _fs->removeKey(param_id) != osOK)){
+		DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR_NVS [0x%x] eliminando %s", (int)err, param_id);
 	}
 	else{
 		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s recuperados de memoria NV", param_id);
