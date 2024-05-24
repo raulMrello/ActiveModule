@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------------
 
 /** Print log macros
- *	Logger válido (ej: _debug)
+ *	Logger vï¿½lido (ej: _debug)
  */
 
 #define DEBUG_TRACE(format, ...)			\
@@ -50,22 +50,23 @@ void ActiveModuleImpl::subscriptionCb(const char* topic, void* msg, uint16_t msg
 			return;
 		}
 				
-        // crea mensaje para publicar en la máquina de estados
+        // crea mensaje para publicar en la mï¿½quina de estados
         State::Msg* op = (State::Msg*)Heap::memAlloc(sizeof(State::Msg));
         MBED_ASSERT(op);
 		
 		/* Reserva espacio para alojar el mensaje y parsea el mensaje */
 		//TODO Heap::memAlloc(...);
 
-		/* Asigna el tipo de señal (evento) */
+		/* Asigna el tipo de seï¿½al (evento) */
 		//TODO
         op->sig = WhichEvt;
 		
         /* Asigna el mensaje (anterior) o NULL si no se utiliza ninguno */
 		//TODO
         op->msg = NULL;
+		op->size = 0;
 		
-        // postea en la cola de la máquina de estados
+        // postea en la cola de la mï¿½quina de estados
         _queue.put(op);
         return;
     }
@@ -78,22 +79,22 @@ State::StateResult ActiveModuleImpl::Init_EventHandler(State::StateEvent* se){
     switch((int)se->evt){
         case State::EV_ENTRY:{
         	int err = osOK;
-        	DEBUG_TRACE("\r\nTemplImp\t Iniciando recuperación de datos...");
+        	DEBUG_TRACE("\r\nTemplImp\t Iniciando recuperaciï¿½n de datos...");
         	// recupera los datos de memoria NV
         	err = _fs->restore("ActiveModuleImplCfg", &_cfg, sizeof(Config), NVSInterface::TypeBlob);
         	if(err == osOK){
-            	// chequea la coherencia de los datos y en caso de algo no esté bien, establece los datos por defecto
-            	// almacenándolos de nuevo en memoria NV.
+            	// chequea la coherencia de los datos y en caso de algo no estï¿½ bien, establece los datos por defecto
+            	// almacenï¿½ndolos de nuevo en memoria NV.
             	if(!checkIntegrity()){
-            		DEBUG_TRACE("\r\nTemplImp\t ERR_CFG. Ha fallado el check de integridad. Establece configuración por defecto.");
+            		DEBUG_TRACE("\r\nTemplImp\t ERR_CFG. Ha fallado el check de integridad. Establece configuraciï¿½n por defecto.");
 					setDefaultConfig();
             	}
 				else{
-					DEBUG_TRACE("\r\nTemplImp\t Recuperación de datos OK!");
+					DEBUG_TRACE("\r\nTemplImp\t Recuperaciï¿½n de datos OK!");
 				}
         	}
 			else{
-				DEBUG_TRACE("\r\nTemplImp\t ERR_FS. Error en la recuperación de datos. Establece configuración por defecto");
+				DEBUG_TRACE("\r\nTemplImp\t ERR_FS. Error en la recuperaciï¿½n de datos. Establece configuraciï¿½n por defecto");
 				setDefaultConfig();
 			}
         	
@@ -109,12 +110,12 @@ State::StateResult ActiveModuleImpl::Init_EventHandler(State::StateEvent* se){
         	/* Recupera el mensaje */
 			//TODO var* data = (var*)(st_msg->msg);
 
-        	/* Si es necesario, almacena en el sistema de ficheros la configuración o el parámetro correspondiente */
+        	/* Si es necesario, almacena en el sistema de ficheros la configuraciï¿½n o el parï¿½metro correspondiente */
 			//TODO: _fs->save("TemplImplCfg", &_cfg.updFlagMask, sizeof(Config), NVSInterface::TypeBlob);
 			//TODO: _fs->saveParameter("TemplImplParam", &_cfg.param, sizeof(param), NVSInterface::TypeParam);
         	DEBUG_TRACE("\r\n[AstCal]\t TemplImp\t Datos actualizados");
 			
-			/* Si es necesario publica actualización en topic */
+			/* Si es necesario publica actualizaciï¿½n en topic */
 			//TODO
 			char* pub_topic = (char*)Heap::memAlloc(MQ::MQClient::getMaxTopicLen());
 			MBED_ASSERT(pub_topic);
@@ -174,7 +175,7 @@ void ActiveModuleImpl::publicationCb(const char* topic, int32_t result){
 //------------------------------------------------------------------------------------
 bool ActiveModuleImpl::checkIntegrity(){
 	bool chk_ok = true;
-	/* Chequea integridad de la configuración */
+	/* Chequea integridad de la configuraciï¿½n */
 	// TODO
 	
 	if(!chk_ok){
@@ -187,7 +188,7 @@ bool ActiveModuleImpl::checkIntegrity(){
 
 //------------------------------------------------------------------------------------
 void ActiveModuleImpl::setDefaultConfig(){
-	/* Establece configuración por defecto */
+	/* Establece configuraciï¿½n por defecto */
 	//TODO
 	
 	/* Guarda en memoria NV */
