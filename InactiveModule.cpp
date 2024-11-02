@@ -178,6 +178,7 @@ bool InactiveModule::ready(){
 
 void InactiveModule::setActiveModule(ActiveModule* parent){
     _activeModule = parent;
+	parent->addInactiveModule(this);
 }
 
 void InactiveModule::checkActiveHandlers(State::StateEvent* se){
