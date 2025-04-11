@@ -1,33 +1,16 @@
-/*
- * ActiveModule.h
- *
- *  Versi�n: 7 Mar 2018
- *  Author: raulMrello
- *
- *	Changelog: 
- *	- @7Mar2018.001 Habilito DefaultPutTimeout para evitar dead-locks ocultos en mutex.lock
- *	- @14Feb2018.001 Cambio 'ready=true' una vez que se haya completado el evento Init::EV_ENTRY.
- *
- *	ActiveModule es un interfaz que proporciona caracter�sticas comunes de funcionamiento relativas a los m�dulos de
- *	gesti�n de alto nivel.
- *
- *	Incluyen su propio hilo de ejecuci�n, su topic_base de publicaci�n y de suscripci�n, m�todos comunes de acceso a
- *	datos almacenados en memoria NV.
- */
- 
-#ifndef __ActiveModule__H
-#define __ActiveModule__H
+#ifndef __InactiveModule__H
+#define __InactiveModule__H
 
 #include "mbed.h"
-#include "StateMachine.h"
 #include "MQLib.h"
+#include "StateMachine.h"
 #include "FSManager.h"
-#include "InactiveModule.h"
+#include "ActiveModule.h"
 #include "GlobalActiveModule.h"
 
-class InactiveModule;
+class ActiveModule;
 
-class ActiveModule : public StateMachine, public GlobalActiveModule {
+class InactiveModule : public GlobalActiveModule {
   public:
               
     /** Constructor, que asocia un nombre, as� como el tama�o de stack necesario para el thread
@@ -35,18 +18,18 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
      *  @param priority Prioridad del thread asociado
      *  @param stack_size Tama�o de stack asociado al thread
      */
-    ActiveModule(const char* name, osPriority priority=osPriorityNormal, uint32_t stack_size = OS_STACK_SIZE, FSManager* fs = NULL, bool defdbg = false, bool logActive = false, const char* logName = "ActiveMod");
+    InactiveModule(const char* name, FSManager* fs = NULL, bool defdbg = false, bool logActive = false, const char* logName = "ActiveMod");
 
 
     /** Destructor
      */
-    virtual ~ActiveModule(){}
+    virtual ~InactiveModule(){}
 
 
     /** Chequea si el m�dulo est� preparado, es decir su thread est� corriendo.
      * 	@return True: thread corriendo, False: Inicializando
      */
-    bool ready() { return _ready; }
+    bool ready();
 
 
     /** Chequea si el m�dulo tiene las trazas de depuraci�n activadas
@@ -60,6 +43,8 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
      */
     void setPublicationBase(const char* pub_topic_base){
     	_pub_topic_base = pub_topic_base;
+        if(_sub_topic_base != NULL)
+            _ready = true;
     }
     
 
@@ -68,6 +53,8 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
      */
     void setSubscriptionBase(const char* sub_topic_base){
     	_sub_topic_base = sub_topic_base;
+        if(_pub_topic_base != NULL)
+            _ready = true;
     }
 
 
@@ -85,17 +72,17 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
      */
     virtual osStatus putMessage(State::Msg *msg);
 
-    void addInactiveModule(InactiveModule* module);
+    void setActiveModule(ActiveModule* parent);
 
-    void checkInactiveModules(State::StateEvent* se);
+    void checkActiveHandlers(State::StateEvent* se);
 
 
   protected:
-    int32_t _queue_count;
-    static int32_t _max_queue_count;
+    //int32_t _queue_count;
+    //static int32_t _max_queue_count;
 
     /** Tiempo de espera por defecto al postear un mensaje */
-    static const uint32_t DefaultPutTimeout = MQ::MQBroker::DefaultMutexTimeout;
+    //static const uint32_t DefaultPutTimeout = MQ::MQBroker::DefaultMutexTimeout;
 
     const char* _pub_topic_base;				/// Nombre del topic base para las publicaciones
     const char* _sub_topic_base;				/// Nombre del topic base para las suscripciones
@@ -104,19 +91,19 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
     MQ::PublishCallback     _publicationCb;     /// Callback de publicaci�n en topics
     FSManager* _fs;								/// Gestor del sistema de backup en memoria NVS
     bool _ready;								/// Flag para indicar el estado del m�dulo a nivel de thread
-    bool _wdt_handled;							/// Flag para indicar si debe reportar al TaskWatchdog
-    uint32_t _wdt_millis;						/// Cadencia en ms para notificar actividad al TaskWatchdog
-    char* _wdt_topic;							/// Topic en el que publicar la notificaci�n de actividad
-    char* _wdt_name;							/// Nombre del componente que publica la notificaci�n
+    //bool _wdt_handled;							/// Flag para indicar si debe reportar al TaskWatchdog
+    //uint32_t _wdt_millis;						/// Cadencia en ms para notificar actividad al TaskWatchdog
+    //char* _wdt_topic;							/// Topic en el que publicar la notificaci�n de actividad
+    //char* _wdt_name;							/// Nombre del componente que publica la notificaci�n
 
     /** M�ximo n�mero de mensajes alojables en la cola asociada a la m�quina de estados */
-    static const uint32_t DefaultMaxQueueMessages = 48;
+    //static const uint32_t DefaultMaxQueueMessages = 48;
 
     /** Cola de mensajes de la m�quina de estados */
-    Queue<State::Msg, DefaultMaxQueueMessages> _queue;
+    //Queue<State::Msg, DefaultMaxQueueMessages> _queue;
 
 
-    State _stInit;								/// Variable de estado para stInit
+    //State _stInit;								/// Variable de estado para stInit
 
 
     /** Interfaz para obtener un evento osEvent de la clase heredera
@@ -190,15 +177,20 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
    * @return True: exito, False: no se pudo recuperar
   */
   virtual bool removeParameter(const char* param_id);
-  
+
+  void checkInactiveModules(State::StateEvent* se);
+
+  bool nextState();
+
   private:
 
     static const uint8_t MaxNameLength = 16;	/// Tama�o del nombre
-    Thread* _th;								/// Thread asociado al m�dulo
+    //Thread* _th;								/// Thread asociado al m�dulo
     char _name[MaxNameLength+1];				/// Nombre del m�dulo (ej. "[Name]..........")
-    Semaphore _sem_th{0,1};
-
-    list<InactiveModule*> _inactiveModulesList;
+    //Semaphore _sem_th{0,1};
+    ActiveModule* _activeModule;						/// M�dulo activo asociado
+    list<State::EventHandler> handlersList;            /// Lista de manejadores de eventos
+    int _moduleId;
 
     /** Hilo de ejecuci�n propio.
      */
@@ -206,7 +198,7 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 
 };
      
-#endif /*__ActiveModule__H */
+#endif /*__InactiveModule__H */
 
 /**** END OF FILE ****/
 
