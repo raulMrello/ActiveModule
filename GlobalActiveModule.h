@@ -7,6 +7,7 @@ class GlobalActiveModule{
           _logActive = logActive;
           _logName = logName;
       }
+      virtual ~GlobalActiveModule() = default;
       bool getLogActive() { return _logActive; }
       char* getLogName() { return _logName; }
       void setJSONSupport(bool flag){_json_supported = flag;}

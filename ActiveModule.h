@@ -40,7 +40,7 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 
     /** Destructor
      */
-    virtual ~ActiveModule(){}
+    ~ActiveModule();
 
 
     /** Chequea si el m�dulo est� preparado, es decir su thread est� corriendo.
@@ -88,6 +88,10 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
     void addInactiveModule(InactiveModule* module);
 
     void checkInactiveModules(State::StateEvent* se);
+
+    bool checkInactiveModules(osEvent oe);
+
+    ActiveModule* getActiveModule(){return this;}
 
 
   protected:

@@ -50,6 +50,22 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 	_sem_th.wait();
 }
 
+ActiveModule::~ActiveModule(){
+	if (_wdt_topic != NULL) {
+	  delete _wdt_topic;
+	  _wdt_topic = NULL;
+	}
+	
+	if (_wdt_name != NULL) {
+	  delete _wdt_name;
+	  _wdt_name = NULL;
+	}
+	if(_th != NULL){
+	  delete(_th);
+	}
+	return;
+  }
+
 
 
 //------------------------------------------------------------------------------------
@@ -78,11 +94,11 @@ void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic,
 osStatus ActiveModule::putMessage(State::Msg *msg){
 	if(++_queue_count > _max_queue_count){
 		_max_queue_count = _queue_count;
-		DEBUG_TRACE_V(_EXPR_, _MODULE_, "QUEUE_COUNT = %ld", _queue_count);
+		DEBUG_TRACE_V(_EXPR_, _MODULE_, "QUEUE_COUNT = %d", _queue_count);
 	}
     osStatus ost = _queue.put(msg, ActiveModule::DefaultPutTimeout);
     if(ost != osOK){
-        DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %ld", ost);
+        DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %d", ost);
     }
     return ost;
 }
@@ -109,7 +125,10 @@ void ActiveModule::task() {
     // de la clase heredera
     for(;;){
         osEvent oe = getOsEvent();
-        run(&oe);
+
+		if(checkInactiveModules(oe) != true){
+        	run(&oe);
+		}
     }
 }
 
@@ -197,4 +216,15 @@ void ActiveModule::checkInactiveModules(State::StateEvent* se){
 	for(InactiveModule* module : _inactiveModulesList){
 		module->checkActiveHandlers(se);
 	}
+}
+
+bool ActiveModule::checkInactiveModules(osEvent oe){
+	bool res = false;
+	for(InactiveModule* module : _inactiveModulesList){
+		res = module->checkActiveHandlers(oe);
+		if(res == true){
+			break;
+		}
+	}
+	return res;
 }

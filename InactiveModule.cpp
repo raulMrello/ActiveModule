@@ -17,7 +17,7 @@ static int moduleId = 0;
 
 
 //------------------------------------------------------------------------------------
-InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, bool logActive, const char* logName) : GlobalActiveModule(logActive, logName){
+InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, bool logActive, const char* logName) : StateMachine(), GlobalActiveModule(logActive, logName){
 	//_queue_count = 0;
 	// Inicializa flag de estado, propiedades internas y thread
 	_ready = false;
@@ -32,6 +32,7 @@ InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, boo
 	_sub_topic_base = NULL;
     _activeModule = NULL;
     _moduleId = moduleId++;
+	
 	//_wdt_handled = false;
 	//_wdt_millis = osWaitForever;
 
@@ -39,7 +40,7 @@ InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, boo
     //StateMachine::attachMessageHandler(new Callback<osStatus(State::Msg*)>(this, &InactiveModule::putMessage));
 
     // creo m�quinas de estado inicial
-    //_stInit.setHandler(callback(this, &InactiveModule::Init_EventHandler));
+    _stInit.setHandler(callback(this, &InactiveModule::Init_EventHandler));
     handlersList.push_back(callback(this, &InactiveModule::Init_EventHandler));
     
 
@@ -186,7 +187,15 @@ void InactiveModule::checkActiveHandlers(State::StateEvent* se){
         for(State::EventHandler it : handlersList){
             it.call(se);
         }
-    }
+	}
+}
+
+bool InactiveModule::checkActiveHandlers(osEvent oe){
+    if(((State::Msg*)(oe.value.p))->moduleId == _moduleId){
+		run(&oe);
+		return true;
+	}
+	return false;
 }
 
 void InactiveModule::checkInactiveModules(State::StateEvent* se){

@@ -10,7 +10,7 @@
 
 class ActiveModule;
 
-class InactiveModule : public GlobalActiveModule {
+class InactiveModule : public StateMachine, public GlobalActiveModule {
   public:
               
     /** Constructor, que asocia un nombre, as� como el tama�o de stack necesario para el thread
@@ -43,8 +43,10 @@ class InactiveModule : public GlobalActiveModule {
      */
     void setPublicationBase(const char* pub_topic_base){
     	_pub_topic_base = pub_topic_base;
-        if(_sub_topic_base != NULL)
+        if(_sub_topic_base != NULL){
             _ready = true;
+            initState(&_stInit);
+        }
     }
     
 
@@ -53,8 +55,10 @@ class InactiveModule : public GlobalActiveModule {
      */
     void setSubscriptionBase(const char* sub_topic_base){
     	_sub_topic_base = sub_topic_base;
-        if(_pub_topic_base != NULL)
+        if(_pub_topic_base != NULL){
             _ready = true;
+            initState(&_stInit);
+        }
     }
 
 
@@ -75,6 +79,15 @@ class InactiveModule : public GlobalActiveModule {
     void setActiveModule(ActiveModule* parent);
 
     void checkActiveHandlers(State::StateEvent* se);
+
+    bool checkActiveHandlers(osEvent oe);
+
+    ActiveModule* getActiveModule(){return _activeModule;}
+
+    void initStateMachine(){
+      // asigna m�quina de estados por defecto  y la inicia
+      initState(&_stInit);
+    }
 
 
   protected:
@@ -103,7 +116,7 @@ class InactiveModule : public GlobalActiveModule {
     //Queue<State::Msg, DefaultMaxQueueMessages> _queue;
 
 
-    //State _stInit;								/// Variable de estado para stInit
+    State _stInit;								/// Variable de estado para stInit
 
 
     /** Interfaz para obtener un evento osEvent de la clase heredera
