@@ -39,6 +39,11 @@ ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack
 	_wdt_handled = false;
 	_wdt_millis = osWaitForever;
 
+	_moduleId = moduleId++;
+
+	DEBUG_TRACE_E(_EXPR_, _MODULE_, "ModuleId activo asociado=%d", _moduleId);
+	
+
     // Asigno manejador de mensajes en el Mailbox
     StateMachine::attachMessageHandler(new Callback<osStatus(State::Msg*)>(this, &ActiveModule::putMessage));
 
@@ -92,6 +97,10 @@ void ActiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topic,
 
 //------------------------------------------------------------------------------------
 osStatus ActiveModule::putMessage(State::Msg *msg){
+	// Asigno el id del modulo al mensaje si es -1
+	//DEBUG_TRACE_E(_EXPR_, _MODULE_, "Yo soy %d, quien publica es: %d", _moduleId, msg->moduleId);
+	
+	msg->moduleId = (msg->moduleId == -1)? _moduleId : msg->moduleId;
 	if(++_queue_count > _max_queue_count){
 		_max_queue_count = _queue_count;
 		DEBUG_TRACE_V(_EXPR_, _MODULE_, "QUEUE_COUNT = %d", _queue_count);
@@ -221,7 +230,7 @@ void ActiveModule::checkInactiveModules(State::StateEvent* se){
 bool ActiveModule::checkInactiveModules(osEvent oe){
 	bool res = false;
 	for(InactiveModule* module : _inactiveModulesList){
-		res = module->checkActiveHandlers(oe);
+		res = module->checkActiveHandlers(oe);		
 		if(res == true){
 			break;
 		}
