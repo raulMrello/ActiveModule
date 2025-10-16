@@ -36,6 +36,8 @@ class InactiveModule : public StateMachine, public GlobalActiveModule {
      * 	@return True: activadas, False: desactivadas
      */
     bool debugActive() { return _defdbg; }
+
+    void start();
   
   
     /** Configura el topic base para la publicaci�n de mensajes
@@ -43,10 +45,10 @@ class InactiveModule : public StateMachine, public GlobalActiveModule {
      */
     void setPublicationBase(const char* pub_topic_base){
     	_pub_topic_base = pub_topic_base;
-        // if(_sub_topic_base != NULL){
-        //     _ready = true;
-        //     initState(&_stInit);
-        // }
+      
+        if(_sub_topic_base != NULL){
+            start();
+        }
     }
     
 
@@ -55,10 +57,10 @@ class InactiveModule : public StateMachine, public GlobalActiveModule {
      */
     void setSubscriptionBase(const char* sub_topic_base){
     	_sub_topic_base = sub_topic_base;
-        // if(_pub_topic_base != NULL){
-        //     _ready = true;
-        //     initState(&_stInit);
-        // }
+      
+        if(_pub_topic_base != NULL){
+            start();
+        }
     }
 
 
@@ -193,7 +195,6 @@ class InactiveModule : public StateMachine, public GlobalActiveModule {
 
   void checkInactiveModules(State::StateEvent* se);
 
-  //bool nextState();
 
   private:
 
@@ -203,7 +204,6 @@ class InactiveModule : public StateMachine, public GlobalActiveModule {
     //Semaphore _sem_th{0,1};
     ActiveModule* _activeModule;						/// M�dulo activo asociado
     list<State::EventHandler> handlersList;            /// Lista de manejadores de eventos
-    //int _moduleId;
 
     /** Hilo de ejecuci�n propio.
      */

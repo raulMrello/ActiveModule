@@ -8,7 +8,6 @@
 #define _EXPR_		(_defdbg && !IS_ISR())
 //int32_t InactiveModule::_max_queue_count = 0;
 
-//static int moduleId = 0;
 
 
 //------------------------------------------------------------------------------------
@@ -31,9 +30,8 @@ InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, boo
 	_pub_topic_base = NULL;
 	_sub_topic_base = NULL;
     _activeModule = NULL;
-    _moduleId = moduleId++;
+    _moduleId = getNewModuleId();
 
-	DEBUG_TRACE_E(_EXPR_, _MODULE_, "ModuleId inactivo asociado=%d", _moduleId);
 	
 	//_wdt_handled = false;
 	//_wdt_millis = osWaitForever;
@@ -41,10 +39,6 @@ InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, boo
     // Asigno manejador de mensajes en el Mailbox
     StateMachine::attachMessageHandler(new Callback<osStatus(State::Msg*)>(this, &InactiveModule::putMessage));
 
-	// NOTA: En los módulos inactivos no se crea un hilo propio ni queue local; los
-	// eventos (incluyendo EV_ENTRY / EV_EXIT generados por tranState) se deben
-	// encolar en la cola del módulo activo padre. Para ello se instalará el
-	// callback de publicación cuando se llame a setActiveModule().
 
     // creo m�quinas de estado inicial
     _stInit.setHandler(callback(this, &InactiveModule::Init_EventHandler));
@@ -77,14 +71,18 @@ void InactiveModule::attachToTaskWatchdog(uint32_t millis, const char* wdog_topi
 		_wdt_millis = osWaitForever;
 		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERROR: Registrando componente %s en TaskWatchdog", _wdt_name);
 	}*/
-    DEBUG_TRACE_E(_EXPR_, _MODULE_, "TaskWatchdog no disponible para Inactive Module");
+    //DEBUG_TRACE_E(_EXPR_, _MODULE_, "TaskWatchdog no disponible para Inactive Module");
 }
 
 
 //------------------------------------------------------------------------------------
 osStatus InactiveModule::putMessage(State::Msg *msg){
     msg->moduleId = _moduleId;
-    return _activeModule->putMessage(msg);
+	if(_activeModule == NULL){
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "putMessage antes de asociar ActiveModule (descartado evt=%llu)", (unsigned long long)msg->sig);
+		return osErrorResource;
+	}
+	return _activeModule->putMessage(msg);
 }
 
 
@@ -174,15 +172,19 @@ bool InactiveModule::removeParameter(const char* param_id){
 	return ((err == osOK)? true : false);
 }
 
+void InactiveModule::start(){
+	setCurr(&_stInit);
+	static State::Msg entryMsg(State::EV_ENTRY, NULL, -1);
+	osEvent oe; memset(&oe, 0, sizeof(oe));
+	oe.status = osEventMessage;
+	oe.value.p = &entryMsg;
+	State::StateEvent se; se.evt = (State::Event_type)State::EV_ENTRY; se.oe = &oe;
+	
+	Init_EventHandler(&se);
+}
+
 bool InactiveModule::ready(){
-    if(_pub_topic_base && _sub_topic_base){
-		setCurr(&_stInit);
-		State::StateEvent se;
-		se.evt = (State::Event_type)State::EV_ENTRY;
-        Init_EventHandler(&se);
-        return _ready;
-    }
-    return false;
+	return _ready;
 }
 
 void InactiveModule::setActiveModule(ActiveModule* parent){
@@ -200,11 +202,9 @@ void InactiveModule::checkActiveHandlers(State::StateEvent* se){
 
 bool InactiveModule::checkActiveHandlers(osEvent oe){
     if(((State::Msg*)(oe.value.p))->moduleId == _moduleId){
-		DEBUG_TRACE_E(_EXPR_, _MODULE_, "Mensajito para el inactivo: %d ", _moduleId);
 		run(&oe);
 		return true;
 	}
-	DEBUG_TRACE_E(_EXPR_, _MODULE_, "No es para mi yo: %d  mensaje para :%d !!!", _moduleId, ((State::Msg*)(oe.value.p))->moduleId);
 	
 	return false;
 }
@@ -212,7 +212,3 @@ bool InactiveModule::checkActiveHandlers(osEvent oe){
 void InactiveModule::checkInactiveModules(State::StateEvent* se){
 	DEBUG_TRACE_W(_EXPR_, _MODULE_, "No es posible gestionar modulos inactivos desde un modulo inactivo");
 }
-
-// bool InactiveModule::nextState(){
-// 	return false;
-// }
