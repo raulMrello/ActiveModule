@@ -6,6 +6,7 @@
  */
 
 #include "ActiveModule.h"
+#include <inttypes.h> // C99 fixed-width integer format macros (portable for uint32_t/int32_t)
 
 
 //------------------------------------------------------------------------------------
@@ -99,11 +100,11 @@ osStatus ActiveModule::putMessage(State::Msg *msg){
 	msg->moduleId = (msg->moduleId == -1)? _moduleId : msg->moduleId;
 	if(++_queue_count > _max_queue_count){
 		_max_queue_count = _queue_count;
-		DEBUG_TRACE_V(_EXPR_, _MODULE_, "QUEUE_COUNT = %d", _queue_count);
+		DEBUG_TRACE_V(_EXPR_, _MODULE_, "QUEUE_COUNT = %"PRId32"", _queue_count);
 	}
     osStatus ost = _queue.put(msg, ActiveModule::DefaultPutTimeout);
     if(ost != osOK){
-        DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %d", ost);
+	DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %"PRId32"", (int32_t)ost);
     }
     return ost;
 }
