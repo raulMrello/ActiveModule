@@ -10,7 +10,7 @@ class GlobalActiveModule{
       }
       virtual ~GlobalActiveModule() = default;
       bool getLogActive() { return _logActive; }
-      char* getLogName() { return _logName; }
+      char* getLogName() { return (char*)_logName; }
       void setJSONSupport(bool flag){_json_supported = flag;}
       bool isJSONSupported(){return _json_supported;}
       virtual osStatus putMessage(State::Msg *msg) = 0;
