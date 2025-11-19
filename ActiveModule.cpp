@@ -217,10 +217,9 @@ void ActiveModule::addInactiveModule(InactiveModule* module) {
 	_inactiveModulesList.push_back(module);
 
 	// Publicamos un mensaje a nuestra cola para arrancarlo en nuestro contexto
-	DEBUG_TRACE_E(_EXPR_, _MODULE_, "Enviamos mensaje ENTRY al moduleId: %d", module->getModuleId());
-	
-    State::Msg *msg = new State::Msg(State::EV_ENTRY, NULL, module->getModuleId());
-    osStatus st = putMessage(msg);
+    State::Msg *msg = new State::Msg(State::EV_ENTRY, NULL, -1);
+	msg->moduleId = module->getModuleId();
+    osStatus st = ActiveModule::putMessage(msg);
     if (st != osOK) {
         DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_PUT EvStartInactive");
         delete msg; // si no hay cola, no lo arrancamos
