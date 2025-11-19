@@ -12,7 +12,7 @@
 //-- PRIVATE TYPEDEFS ----------------------------------------------------------------
 //------------------------------------------------------------------------------------
 #define _MODULE_ 	_name
-#define _EXPR_		(_defdbg && !IS_ISR())
+#define _EXPR_		(!IS_ISR())
 int32_t ActiveModule::_max_queue_count = 0;
 
 
@@ -215,6 +215,16 @@ bool ActiveModule::removeParameter(const char* param_id){
 
 void ActiveModule::addInactiveModule(InactiveModule* module) {
 	_inactiveModulesList.push_back(module);
+
+	// Publicamos un mensaje a nuestra cola para arrancarlo en nuestro contexto
+	DEBUG_TRACE_E(_EXPR_, _MODULE_, "Enviamos mensaje ENTRY al moduleId: %d", module->getModuleId());
+	
+    State::Msg *msg = new State::Msg(State::EV_ENTRY, NULL, module->getModuleId());
+    osStatus st = putMessage(msg);
+    if (st != osOK) {
+        DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_PUT EvStartInactive");
+        delete msg; // si no hay cola, no lo arrancamos
+    }
 }
 
 void ActiveModule::checkInactiveModules(State::StateEvent* se){

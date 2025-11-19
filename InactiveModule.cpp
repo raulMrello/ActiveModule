@@ -174,13 +174,13 @@ bool InactiveModule::removeParameter(const char* param_id){
 
 void InactiveModule::start(){
 	setCurr(&_stInit);
-	static State::Msg entryMsg(State::EV_ENTRY, NULL, -1);
+	/*static State::Msg entryMsg(State::EV_ENTRY, NULL, -1);
 	osEvent oe; memset(&oe, 0, sizeof(oe));
 	oe.status = osEventMessage;
 	oe.value.p = &entryMsg;
 	State::StateEvent se; se.evt = (State::Event_type)State::EV_ENTRY; se.oe = &oe;
 	
-	Init_EventHandler(&se);
+	Init_EventHandler(&se);*/
 }
 
 bool InactiveModule::ready(){
