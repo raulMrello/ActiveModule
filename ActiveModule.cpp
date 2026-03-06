@@ -22,7 +22,7 @@ int32_t ActiveModule::_max_queue_count = 0;
 
 
 //------------------------------------------------------------------------------------
-ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack_size, FSManager* fs, bool defdbg, bool logActive, const char* logName) : StateMachine(), GlobalActiveModule(logActive, logName){
+ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack_size, FSManager* fs, bool defdbg, bool logActive, const char* logName) : StateMachine(), GlobalActiveModule(logActive, name){
 	_queue_count = 0;
 	// Inicializa flag de estado, propiedades internas y thread
 	_ready = false;
@@ -154,6 +154,47 @@ osEvent ActiveModule::getOsEvent(){
 			}
 		}
 	}while (oe.status == osEventTimeout);
+
+	// Publica un keepalive con contexto de la última señal/mensaje que va a procesar.
+	// Formato: <base>|mod=<logName>;sig=0x<sig>
+	if(_wdt_handled && oe.status == osEventMessage && oe.value.p != NULL){
+		State::Msg* msg = (State::Msg*)oe.value.p;
+		const char* moduleLogName = NULL;
+		if(msg->moduleId == _moduleId){
+			moduleLogName = GlobalActiveModule::getLogName();
+		}
+		else{
+			for(InactiveModule* module : _inactiveModulesList){
+				if(module && module->getModuleId() == msg->moduleId){
+					moduleLogName = module->getLogName();
+					break;
+				}
+			}
+		}
+		if(moduleLogName == NULL || moduleLogName[0] == '\0'){
+			moduleLogName = "unknown";
+		}
+		// Limita el nombre base (componente) para mantener el payload pequeño
+		static const size_t kMaxBaseLen = 24;
+		size_t baseLen = strlen(_wdt_name);
+		if(baseLen > kMaxBaseLen){
+			baseLen = kMaxBaseLen;
+		}
+		// Limita el nombre para mantener el payload pequeño y evitar warnings de truncado
+		static const size_t kMaxModLen = 32;
+		size_t modLen = strlen(moduleLogName);
+		if(modLen > kMaxModLen){
+			modLen = kMaxModLen;
+		}
+		char payload[96];
+		memset(payload, 0, sizeof(payload));
+		snprintf(payload, sizeof(payload), "%.*s|mod=%.*s;sig=0x%llX", (int)baseLen, _wdt_name, (int)modLen, moduleLogName, (unsigned long long)msg->sig);
+		int32_t err = MQ::SUCCESS;
+		if((err = MQ::MQClient::publish(_wdt_topic, payload, strlen(payload)+1, &_publicationCb)) != MQ::SUCCESS){
+			DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error publicando %s desde %s (ctx)", _wdt_topic, _wdt_name);
+		}
+	}
+
 	_queue_count--;
 	if(_queue_count < 0){
 		_queue_count = 0;
