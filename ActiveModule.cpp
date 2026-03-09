@@ -147,10 +147,13 @@ osEvent ActiveModule::getOsEvent(){
 		oe = _queue.get(millis);
 		// si est� habilitada la notificaci�n al task_watchdog...
 		if(_wdt_handled){
-			// publica keepalive
-			int32_t err = MQ::SUCCESS;
-			if((err = MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb)) != MQ::SUCCESS){
-				DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error publicando %s desde %s", _wdt_topic, _wdt_name);
+			// Publica keepalive base solo cuando NO hay mensaje (y como fallback si el mensaje no trae payload).
+			// Si hay mensaje, el keepalive con contexto se publica mas abajo y evitamos duplicar.
+			if(oe.status != osEventMessage || oe.value.p == NULL){
+				int32_t err = MQ::SUCCESS;
+				if((err = MQ::MQClient::publish(_wdt_topic, _wdt_name, strlen(_wdt_name)+1, &_publicationCb)) != MQ::SUCCESS){
+					DEBUG_TRACE_E(_EXPR_, _MODULE_, "Error publicando %s desde %s", _wdt_topic, _wdt_name);
+				}
 			}
 		}
 	}while (oe.status == osEventTimeout);
