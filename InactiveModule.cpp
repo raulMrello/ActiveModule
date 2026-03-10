@@ -16,7 +16,7 @@
 
 
 //------------------------------------------------------------------------------------
-InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, bool logActive, const char* logName) : StateMachine(), GlobalActiveModule(logActive, logName){
+InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, bool logActive, const char* logName) : StateMachine(), GlobalActiveModule(logActive, name){
 	//_queue_count = 0;
 	// Inicializa flag de estado, propiedades internas y thread
 	_ready = false;
