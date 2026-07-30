@@ -34,8 +34,9 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
      *  @param name Nombre del m�dulo
      *  @param priority Prioridad del thread asociado
      *  @param stack_size Tama�o de stack asociado al thread
+     *  @param stack_in_external_memory Si true, intenta reservar el stack en PSRAM (requiere CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM)
      */
-    ActiveModule(const char* name, osPriority priority=osPriorityNormal, uint32_t stack_size = OS_STACK_SIZE, FSManager* fs = NULL, bool defdbg = false, bool logActive = false, const char* logName = "ActiveMod");
+    ActiveModule(const char* name, osPriority priority=osPriorityNormal, uint32_t stack_size = OS_STACK_SIZE, FSManager* fs = NULL, bool defdbg = false, bool logActive = false, const char* logName = "ActiveMod", bool stack_in_external_memory = false);
 
 
     /** Destructor
@@ -199,6 +200,7 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 
     static const uint8_t MaxNameLength = 16;	/// Tama�o del nombre
     Thread* _th;								/// Thread asociado al m�dulo
+    unsigned char* _th_stack_mem;				/// Memoria de stack reservada por el m�dulo (opcional, para PSRAM)
     char _name[MaxNameLength+1];				/// Nombre del m�dulo (ej. "[Name]..........")
     Semaphore _sem_th{0,1};
 

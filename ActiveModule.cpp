@@ -8,6 +8,12 @@
 #include "ActiveModule.h"
 #include <inttypes.h> // C99 fixed-width integer format macros (portable for uint32_t/int32_t)
 
+#if ESP_PLATFORM == 1
+#include "esp_heap_caps.h"
+#include "sdkconfig.h"
+#include "soc/soc_memory_types.h"
+#endif
+
 
 //------------------------------------------------------------------------------------
 //-- PRIVATE TYPEDEFS ----------------------------------------------------------------
@@ -23,18 +29,39 @@ int32_t ActiveModule::_max_queue_count = 0;
 
 
 //------------------------------------------------------------------------------------
-ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack_size, FSManager* fs, bool defdbg, bool logActive, const char* logName) : StateMachine(), GlobalActiveModule(logActive, name){
+ActiveModule::ActiveModule(const char* name, osPriority priority, uint32_t stack_size, FSManager* fs, bool defdbg, bool logActive, const char* logName, bool stack_in_external_memory) : StateMachine(), GlobalActiveModule(logActive, name){
 	_queue_count = 0;
 	// Inicializa flag de estado, propiedades internas y thread
 	_ready = false;
 	_defdbg = defdbg;
+	_wdt_topic = NULL;
+	_wdt_name = NULL;
 	strcpy((char*)_name, "[");
 	strncat((char*)_name, name, MaxNameLength-2);
 	strcat((char*)_name, "]");
 	memset(&_name[strlen(_name)], '.', MaxNameLength - strlen(_name) + 1);
 	_name[MaxNameLength] = 0;
 	_fs = fs;
-	_th = new Thread(priority, stack_size, NULL, name);
+	_th_stack_mem = NULL;
+	if(stack_in_external_memory){
+		#if ESP_PLATFORM == 1
+		#ifdef CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM
+		_th_stack_mem = (unsigned char*)heap_caps_malloc(stack_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+		if(_th_stack_mem == NULL){
+			DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERROR reservando stack %s en PSRAM (%d bytes). Usando stack interno", name, stack_size);
+		}
+		else{
+			DEBUG_TRACE_E(_EXPR_, _MODULE_, "Stack %s reservado en %s: %p (%d bytes)", name, esp_ptr_external_ram(_th_stack_mem) ? "PSRAM" : "RAM", _th_stack_mem, stack_size);
+		}
+		#else
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM no activo en este build. Usando stack interno");
+		#endif
+		#else
+		(void)name;
+		(void)stack_size;
+		#endif
+	}
+	_th = new Thread(priority, stack_size, _th_stack_mem, name);
 	_pub_topic_base = NULL;
 	_sub_topic_base = NULL;
 	_wdt_handled = false;
@@ -67,7 +94,14 @@ ActiveModule::~ActiveModule(){
 	}
 	if(_th != NULL){
 	  delete(_th);
+	  _th = NULL;
 	}
+	#if ESP_PLATFORM == 1
+	if(_th_stack_mem){
+		heap_caps_free(_th_stack_mem);
+		_th_stack_mem = NULL;
+	}
+	#endif
 	return;
   }
 
