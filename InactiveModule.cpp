@@ -30,7 +30,6 @@ InactiveModule::InactiveModule(const char* name, FSManager* fs, bool defdbg, boo
 	_pub_topic_base = NULL;
 	_sub_topic_base = NULL;
     _activeModule = NULL;
-    _moduleId = getNewModuleId();
 
 	
 	//_wdt_handled = false;

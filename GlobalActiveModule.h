@@ -16,7 +16,6 @@ class GlobalActiveModule{
       void setJSONSupport(bool flag){_json_supported = flag;}
       bool isJSONSupported(){return _json_supported;}
       virtual osStatus putMessage(State::Msg *msg) = 0;
-      int getNewModuleId() { return moduleId; }
     protected:
       bool _logActive;
       const char* _logName;
