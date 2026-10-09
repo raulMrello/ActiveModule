@@ -121,7 +121,7 @@ osEvent InactiveModule::getOsEvent(){
 }
 
 //------------------------------------------------------------------------------------
-bool InactiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
+bool InactiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type, bool enableResetCount){
 	int err;
 	if(!_fs->open()){
 		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_NVS No se puede abrir el sistema NVS");
@@ -134,6 +134,9 @@ bool InactiveModule::saveParameter(const char* param_id, void* data, size_t size
 		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s guardados en memoria NV", param_id);
 	}
 	_fs->close();
+	if((err == osOK) && enableResetCount){
+		ActiveModule::armResetCount(_fs, true);
+	}
 	return ((err == osOK)? true : false);
 }
 

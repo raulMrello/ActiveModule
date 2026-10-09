@@ -14,6 +14,10 @@
 #define _MODULE_ 	_name
 #define _EXPR_		(_defdbg && !IS_ISR())
 int32_t ActiveModule::_max_queue_count = 0;
+RtosTimer* ActiveModule::_resetCountTm = NULL;
+Callback<void()> ActiveModule::_resetCountDisarmCb;
+uint32_t ActiveModule::_resetCountArmGen = 0;
+uint32_t ActiveModule::_resetCountTimerGen = 0;
 
 
 //------------------------------------------------------------------------------------
@@ -206,7 +210,7 @@ osEvent ActiveModule::getOsEvent(){
 }
 
 //------------------------------------------------------------------------------------
-bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
+bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type, bool enableResetCount){
 	int err;
 	if(!_fs->open()){
 		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_NVS No se puede abrir el sistema NVS");
@@ -219,9 +223,73 @@ bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, 
 		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s guardados en memoria NV", param_id);
 	}
 	_fs->close();
+	if((err == osOK) && enableResetCount){
+		armResetCount(_fs, true);
+	}
 	return ((err == osOK)? true : false);
 }
 
+//------------------------------------------------------------------------------------
+bool ActiveModule::armResetCount(FSManager* fs, bool startTimer){
+	if(fs == NULL){
+		return false;
+	}
+	uint8_t en = 1;
+	uint8_t rst = 0;
+	if(!fs->open()){
+		return false;
+	}
+	int errEn = fs->save(ResetCountEnKey, &en, sizeof(en), NVSInterface::TypeUint8);
+	int errRst = fs->save(ResetCountKey, &rst, sizeof(rst), NVSInterface::TypeUint8);
+	fs->close();
+	if(errEn != osOK || errRst != osOK){
+		return false;
+	}
+	_resetCountArmGen++;
+	if(startTimer){
+		_restartResetCountTimer();
+	}
+	return true;
+}
+
+//------------------------------------------------------------------------------------
+void ActiveModule::setResetCountDisarmCallback(Callback<void()> cb){
+	_resetCountDisarmCb = cb;
+}
+
+//------------------------------------------------------------------------------------
+uint32_t ActiveModule::resetCountArmGeneration(){
+	return _resetCountArmGen;
+}
+
+//------------------------------------------------------------------------------------
+uint32_t ActiveModule::resetCountTimerGeneration(){
+	return _resetCountTimerGen;
+}
+
+//------------------------------------------------------------------------------------
+void ActiveModule::onResetCountTimeout(){
+	if(_resetCountDisarmCb){
+		_resetCountDisarmCb();
+	}
+}
+
+//------------------------------------------------------------------------------------
+static void resetCountTimeoutThunk(){
+	ActiveModule::onResetCountTimeout();
+}
+
+void ActiveModule::_restartResetCountTimer(){
+	if(_resetCountTm == NULL){
+		_resetCountTm = new RtosTimer(callback(resetCountTimeoutThunk), osTimerOnce, "RstCntTm");
+		MBED_ASSERT(_resetCountTm);
+	}
+	else{
+		_resetCountTm->stop();
+	}
+	_resetCountTimerGen = _resetCountArmGen;
+	_resetCountTm->start(ResetCountWindowMs);
+}
 
 //------------------------------------------------------------------------------------
 bool ActiveModule::restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
