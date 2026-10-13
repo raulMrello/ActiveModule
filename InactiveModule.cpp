@@ -135,7 +135,7 @@ bool InactiveModule::saveParameter(const char* param_id, void* data, size_t size
 	}
 	_fs->close();
 	if((err == osOK) && enableResetCount){
-		ActiveModule::armResetCount(_fs, true);
+		armResetCount(true);
 	}
 	return ((err == osOK)? true : false);
 }

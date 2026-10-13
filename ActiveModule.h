@@ -179,21 +179,6 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 	 */
 	virtual bool saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type, bool enableResetCount = false);
 
-	static constexpr const char* ResetCountEnKey = "AppRstEn";
-	static constexpr const char* ResetCountKey = "AppRst";
-	static constexpr uint32_t ResetCountWindowMs = 60000;
-
-	struct ResetCountDisarmReq {
-		uint32_t generation;
-		uint8_t fromBootTimer;
-	};
-
-	static bool armResetCount(FSManager* fs, bool startTimer);
-	static void setResetCountDisarmCallback(Callback<void()> cb);
-	static uint32_t resetCountArmGeneration();
-	static uint32_t resetCountTimerGeneration();
-	static void onResetCountTimeout();
-
 	/** Recupera un par�metro de la memoria NV
 	 * 	@param param_id Identificador del par�metro
 	 * 	@param data Receptor de los datos asociados
@@ -217,12 +202,6 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
     Semaphore _sem_th{0,1};
 
     list<InactiveModule*> _inactiveModulesList;
-
-    static RtosTimer* _resetCountTm;
-    static Callback<void()> _resetCountDisarmCb;
-    static uint32_t _resetCountArmGen;
-    static uint32_t _resetCountTimerGen;
-    static void _restartResetCountTimer();
 
     /** Hilo de ejecuci�n propio.
      */
