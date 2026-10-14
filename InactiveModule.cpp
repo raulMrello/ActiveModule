@@ -135,7 +135,9 @@ bool InactiveModule::saveParameter(const char* param_id, void* data, size_t size
 	}
 	_fs->close();
 	if((err == osOK) && enableResetCount){
-		armResetCount(true);
+		if(!armResetCount(true)){
+			DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR armando cuenta de resets");
+		}
 	}
 	return ((err == osOK)? true : false);
 }
