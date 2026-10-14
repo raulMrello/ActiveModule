@@ -9,7 +9,6 @@ class GlobalActiveModule{
 
       struct ResetCountDisarmReq {
           uint32_t generation;
-          uint8_t fromBootTimer;
       };
 
       enum ResetCountDisarmStatus : uint8_t {

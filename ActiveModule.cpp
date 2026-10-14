@@ -25,16 +25,21 @@ static TimerHandle_t _resetCountTimer = NULL;
 static bool writeResetCount(uint8_t enable, uint8_t count){
 	FSManager* fs = FSManager::getStaticInstance();
 	if((fs == NULL) || !fs->open()){
+		DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR_NVS abriendo para grabar AppRst");
 		return false;
 	}
 	int errEn = fs->save(GlobalActiveModule::ResetCountEnKey, &enable, sizeof(enable), NVSInterface::TypeUint8);
 	int errRst = fs->save(GlobalActiveModule::ResetCountKey, &count, sizeof(count), NVSInterface::TypeUint8);
 	fs->close();
-	return (errEn == osOK) && (errRst == osOK);
+	if((errEn != osOK) || (errRst != osOK)){
+		DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR_NVS grabando AppRstEn=%d AppRst=%d", enable, count);
+		return false;
+	}
+	return true;
 }
 
 static void resetCountTimerCb(TimerHandle_t timer);
-static void restartResetCountTimer();
+static bool restartResetCountTimer();
 
 
 //------------------------------------------------------------------------------------
@@ -241,7 +246,9 @@ bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, 
 	}
 	_fs->close();
 	if((err == osOK) && enableResetCount){
-		armResetCount(true);
+		if(!armResetCount(true)){
+			DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR armando cuenta de resets");
+		}
 	}
 	return ((err == osOK)? true : false);
 }
@@ -256,8 +263,8 @@ bool GlobalActiveModule::armResetCount(bool startTimer){
 	}
 	_resetCountArmGen++;
 	_resetCountMtx.unlock();
-	if(startTimer){
-		restartResetCountTimer();
+	if(startTimer && !restartResetCountTimer()){
+		return false;
 	}
 	return true;
 }
@@ -296,12 +303,15 @@ static void resetCountTimerCb(TimerHandle_t timer){
 	_resetCountMtx.unlock();
 }
 
-static void restartResetCountTimer(){
+static bool restartResetCountTimer(){
 	_resetCountMtx.lock();
 	TimerHandle_t timer = _resetCountTimer;
 	_resetCountMtx.unlock();
-	if(timer != NULL){
-		xTimerStop(timer, portMAX_DELAY);
+	if((timer != NULL) && (xTimerIsTimerActive(timer) != pdFALSE)){
+		if(xTimerStop(timer, portMAX_DELAY) != pdPASS){
+			DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR parando timer de cuenta de resets");
+			return false;
+		}
 	}
 	_resetCountMtx.lock();
 	if(_resetCountTimer == NULL){
@@ -311,7 +321,11 @@ static void restartResetCountTimer(){
 	_resetCountTicketGen = _resetCountArmGen;
 	timer = _resetCountTimer;
 	_resetCountMtx.unlock();
-	xTimerChangePeriod(timer, pdMS_TO_TICKS(GlobalActiveModule::ResetCountWindowMs), portMAX_DELAY);
+	if(xTimerChangePeriod(timer, pdMS_TO_TICKS(GlobalActiveModule::ResetCountWindowMs), portMAX_DELAY) != pdPASS){
+		DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR arrancando timer de cuenta de resets");
+		return false;
+	}
+	return true;
 }
 
 //------------------------------------------------------------------------------------
