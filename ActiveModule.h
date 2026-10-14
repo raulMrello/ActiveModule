@@ -168,7 +168,7 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 
    	/** Graba la configuraci�n en memoria NV
 	 */
-	virtual void saveConfig(bool enableResetCount = false) = 0;
+	virtual void saveConfig() = 0;
 
 	/** Graba un par�metro en la memoria NV
 	 * 	@param param_id Identificador del par�metro
@@ -177,7 +177,8 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 	 * 	@param type Tipo de los datos
 	 * 	@return True: �xito, False: no se pudo salvar
 	 */
-	virtual bool saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type, bool enableResetCount = false);
+	virtual bool saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type);
+
 
 	/** Recupera un par�metro de la memoria NV
 	 * 	@param param_id Identificador del par�metro
