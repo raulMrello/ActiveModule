@@ -5,7 +5,7 @@ class GlobalActiveModule{
     public:
       static constexpr const char* ResetCountEnKey = "AppRstEn";
       static constexpr const char* ResetCountKey = "AppRst";
-      static constexpr uint32_t ResetCountWindowMs = 60000;
+      static constexpr uint32_t ResetCountWindowMs = 300000;
 
       struct ResetCountDisarmReq {
           uint32_t generation;
