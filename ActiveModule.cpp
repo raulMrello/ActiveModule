@@ -6,6 +6,8 @@
  */
 
 #include "ActiveModule.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
 
 
 //------------------------------------------------------------------------------------
@@ -14,6 +16,30 @@
 #define _MODULE_ 	_name
 #define _EXPR_		(_defdbg && !IS_ISR())
 int32_t ActiveModule::_max_queue_count = 0;
+
+static Mutex _resetCountMtx;
+static uint32_t _resetCountArmGen = 0;
+static uint32_t _resetCountTicketGen = 0;
+static TimerHandle_t _resetCountTimer = NULL;
+
+static bool writeResetCount(uint8_t enable, uint8_t count){
+	FSManager* fs = FSManager::getStaticInstance();
+	if((fs == NULL) || !fs->open()){
+		DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR_NVS abriendo para grabar AppRst");
+		return false;
+	}
+	int errEn = fs->save(GlobalActiveModule::ResetCountEnKey, &enable, sizeof(enable), NVSInterface::TypeUint8);
+	int errRst = fs->save(GlobalActiveModule::ResetCountKey, &count, sizeof(count), NVSInterface::TypeUint8);
+	fs->close();
+	if((errEn != osOK) || (errRst != osOK)){
+		DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR_NVS grabando AppRstEn=%d AppRst=%d", enable, count);
+		return false;
+	}
+	return true;
+}
+
+static void resetCountTimerCb(TimerHandle_t timer);
+static bool restartResetCountTimer();
 
 
 //------------------------------------------------------------------------------------
@@ -206,7 +232,7 @@ osEvent ActiveModule::getOsEvent(){
 }
 
 //------------------------------------------------------------------------------------
-bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
+bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type, bool enableResetCount){
 	int err;
 	if(!_fs->open()){
 		DEBUG_TRACE_E(_EXPR_, _MODULE_, "ERR_NVS No se puede abrir el sistema NVS");
@@ -219,9 +245,88 @@ bool ActiveModule::saveParameter(const char* param_id, void* data, size_t size, 
 		DEBUG_TRACE_D(_EXPR_, _MODULE_, "Parm %s guardados en memoria NV", param_id);
 	}
 	_fs->close();
+	if((err == osOK) && enableResetCount){
+		if(!armResetCount(true)){
+			DEBUG_TRACE_W(_EXPR_, _MODULE_, "ERR armando cuenta de resets");
+		}
+	}
 	return ((err == osOK)? true : false);
 }
 
+//------------------------------------------------------------------------------------
+bool GlobalActiveModule::armResetCount(bool startTimer){
+	_resetCountMtx.lock();
+	bool nvsOk = writeResetCount(1, 0);
+	if(!nvsOk){
+		_resetCountMtx.unlock();
+		return false;
+	}
+	_resetCountArmGen++;
+	_resetCountMtx.unlock();
+	if(startTimer && !restartResetCountTimer()){
+		return false;
+	}
+	return true;
+}
+
+//------------------------------------------------------------------------------------
+uint32_t GlobalActiveModule::resetCountArmGeneration(){
+	_resetCountMtx.lock();
+	uint32_t generation = _resetCountArmGen;
+	_resetCountMtx.unlock();
+	return generation;
+}
+
+//------------------------------------------------------------------------------------
+GlobalActiveModule::ResetCountDisarmStatus GlobalActiveModule::disarmResetCountIfCurrent(uint32_t generation, uint32_t* currentGeneration){
+	_resetCountMtx.lock();
+	uint32_t current = _resetCountArmGen;
+	if(currentGeneration != NULL){
+		*currentGeneration = current;
+	}
+	if(generation != current){
+		_resetCountMtx.unlock();
+		return ResetCountDisarmStale;
+	}
+	bool nvsOk = writeResetCount(0, 0);
+	_resetCountMtx.unlock();
+	return nvsOk ? ResetCountDisarmOk : ResetCountDisarmNvsError;
+}
+
+//------------------------------------------------------------------------------------
+static void resetCountTimerCb(TimerHandle_t timer){
+	(void)timer;
+	_resetCountMtx.lock();
+	if(_resetCountTicketGen == _resetCountArmGen){
+		writeResetCount(0, 0);
+	}
+	_resetCountMtx.unlock();
+}
+
+static bool restartResetCountTimer(){
+	_resetCountMtx.lock();
+	TimerHandle_t timer = _resetCountTimer;
+	_resetCountMtx.unlock();
+	if((timer != NULL) && (xTimerIsTimerActive(timer) != pdFALSE)){
+		if(xTimerStop(timer, portMAX_DELAY) != pdPASS){
+			DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR parando timer de cuenta de resets");
+			return false;
+		}
+	}
+	_resetCountMtx.lock();
+	if(_resetCountTimer == NULL){
+		_resetCountTimer = xTimerCreate("RstCntTm", pdMS_TO_TICKS(GlobalActiveModule::ResetCountWindowMs), pdFALSE, NULL, resetCountTimerCb);
+		MBED_ASSERT(_resetCountTimer != NULL);
+	}
+	_resetCountTicketGen = _resetCountArmGen;
+	timer = _resetCountTimer;
+	_resetCountMtx.unlock();
+	if(xTimerChangePeriod(timer, pdMS_TO_TICKS(GlobalActiveModule::ResetCountWindowMs), portMAX_DELAY) != pdPASS){
+		DEBUG_TRACE_E(!IS_ISR(), "[RstCnt]", "ERR arrancando timer de cuenta de resets");
+		return false;
+	}
+	return true;
+}
 
 //------------------------------------------------------------------------------------
 bool ActiveModule::restoreParameter(const char* param_id, void* data, size_t size, NVSInterface::KeyValueType type){
