@@ -14,7 +14,7 @@
 //-- PRIVATE TYPEDEFS ----------------------------------------------------------------
 //------------------------------------------------------------------------------------
 #define _MODULE_ 	_name
-#define _EXPR_		(_defdbg && !IS_ISR())
+#define _EXPR_		(/*_defdbg && */!IS_ISR())
 int32_t ActiveModule::_max_queue_count = 0;
 
 static Mutex _resetCountMtx;
@@ -131,6 +131,10 @@ osStatus ActiveModule::putMessage(State::Msg *msg){
     if(ost != osOK){
         DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_PUT_ERROR %d", ost);
     }
+	// chequeamos el porcentaje de llenado de la cola, si es mayor del 75% indicamos mensaje de error
+	if(_queue_count > (DefaultMaxQueueMessages * 0.75)){
+		DEBUG_TRACE_E(_EXPR_, _MODULE_, "QUEUE_FULL_ERROR %d", _queue_count);
+	}
     return ost;
 }
 
