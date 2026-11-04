@@ -167,8 +167,9 @@ class ActiveModule : public StateMachine, public GlobalActiveModule {
 
 
    	/** Graba la configuraci�n en memoria NV
+	 *  @return true si todas las claves se han grabado
 	 */
-	virtual void saveConfig(bool enableResetCount = false) = 0;
+	virtual bool saveConfig(bool enableResetCount = false) = 0;
 
 	/** Graba un par�metro en la memoria NV
 	 * 	@param param_id Identificador del par�metro
